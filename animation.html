@@ -1,0 +1,63 @@
+<html>
+<style>
+/* Chrome, Safari, Opera */
+#div1 {-webkit-animation-timing-function: ease;}
+/* Standard syntax */
+#div1 {animation-timing-function: ease;}
+/* Chrome, Safari, Opera */
+@-webkit-keyframes mymove {
+    from {left: 0px;}
+    to {left: 300px;}
+}
+/* Standard syntax */
+@keyframes mymove {
+    from {left: 0px;}
+     to {left: 300px;}
+}
+div {
+    width: 50px;
+    height: 100px;
+    font-weight: bold;
+    position: relative;
+    -webkit-animation: mymove 5s; /* Chrome, Safari, Opera */
+    animation: mymove 5s;
+	animation-fill-mode: forwards; 
+}
+@-webkit-keyframes shake {
+    0%, 100% {-webkit-transform: translateY(0);}
+    10%, 30%, 50%, 70%, 90% {-webkit-transform: translateY(-10px);}
+    20%, 40%, 60%, 80% {-webkit-transform: translateY(10px);}
+}
+@keyframes shake {
+    0%, 100% {transform: translateY(0);}
+    10%, 30%, 50%, 70%, 90% {transform: translateY(-10px);}
+    20%, 40%, 60%, 80% {transform: translateY(10px);}
+}
+
+
+.shake {
+    -webkit-animation-name: shake;
+    animation-name: shake;
+}
+
+.animated {
+ -webkit-animation: shake 5s infinite; /* Chrome, Safari, Opera */
+    animation: shake 5s infinite;
+    -webkit-animation-duration: 1s;
+    animation-duration: 10s;
+    -webkit-animation-fill-mode: both;
+    animation-fill-mode: both;
+}
+
+
+#aeoplane{width:250%}
+</style>
+<body>
+<div id="div1">
+
+  <div id="animated-example" class="animated shake">
+    <img id="aeoplane" src="https://s-media-cache-ak0.pinimg.com/736x/99/0f/a5/990fa50571428eedb1cc92511ceda2fb.jpg"></img></div>
+
+</div>
+</body>
+</html>

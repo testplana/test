@@ -1,0 +1,386 @@
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+
+<style>
+body{
+   min-width:700px;
+}
+#msg { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; min-width:350px; overflow-x:auto;}
+#people li{padding: 5px; display: block; padding-left:15px}
+#people{margin:0; padding:0}
+#people li.collapse{display: none;} 
+/* Chrome, Safari, Opera */
+#div1 {-webkit-animation-timing-function: ease;}
+/* Standard syntax */
+#div1 {animation-timing-function: ease;}
+/* Chrome, Safari, Opera */
+@-webkit-keyframes mymove {
+    from {left: 0px;}
+    to {left: 40vw;}
+}
+/* Standard syntax */
+@keyframes mymove {
+    from {left: 0px;}
+     to {left: 40vw;}
+}
+#div1 {
+	position:relative;
+	display:none;
+    width: 50px;
+    height: 100px;
+    font-weight: bold;
+    position: relative;
+    -webkit-animation: mymove 5s; /* Chrome, Safari, Opera */
+    animation: mymove 5s;
+	animation-fill-mode: forwards; 
+}
+@-webkit-keyframes shake {
+    0%, 100% {-webkit-transform: translateY(0);}
+    10%, 30%, 50%, 70%, 90% {-webkit-transform: translateY(-10px);}
+    20%, 40%, 60%, 80% {-webkit-transform: translateY(10px);}
+}
+@keyframes shake {
+    0%, 100% {transform: translateY(0);}
+    10%, 30%, 50%, 70%, 90% {transform: translateY(-10px);}
+    20%, 40%, 60%, 80% {transform: translateY(10px);}
+}
+
+
+.shake {
+    -webkit-animation-name: shake;
+    animation-name: shake;
+}
+
+.animated {
+ -webkit-animation: shake 5s infinite; /* Chrome, Safari, Opera */
+    animation: shake 5s infinite;
+    -webkit-animation-duration: 1s;
+    animation-duration: 10s;
+    -webkit-animation-fill-mode: both;
+    animation-fill-mode: both;
+}
+
+
+#aeoplane{width:250%}
+#welMsg{
+	z-index:1;
+	position:absolute;
+	left:-50px
+}
+
+.btn {
+  font-family: Arial;
+  color: #ffffff;
+  font-size: 20px;
+  background: #3f88b8;
+  padding: 10px 20px 10px 20px;
+  text-decoration: none;
+}
+
+
+#msg{
+	width:100%;
+    overflow: hidden;
+}
+
+</style>
+<script>
+
+
+var FReader;
+	var socket = io.connect('http://192.168.1.29:3000');
+	var user;
+	var currentUsers;
+var temp;
+	// on connection to server, ask for user's name with an anonymous callback
+	
+	
+	socket.on('connect', function(){
+		// call the server-side function 'adduser' and send one parameter (value of prompt)
+		var user;
+		while(!user){			
+			user = prompt("What's your name?");
+		}
+		socket.emit('adduser', user);
+	});
+	socket.on('currentUsers', function(data){
+		// call the server-side function 'adduser' and send one parameter (value of prompt)
+		
+		user = prompt("User name was used, please use another one.");
+		while(!user){
+			user = prompt("What's your name?");
+		}
+		
+		socket.emit('adduser', user);
+	});
+	
+	// listener, whenever the server emits 'updatechat', this updates the chat body
+	socket.on('updatechat', function (username, data) {
+		$('#conversation').append('<div><b>'+username + ':</b> ' + data + '<font style="padding-left: 28em;float: right;">'+new Date().toLocaleString()+'</font>'+ '<br></div>' );
+	});
+	// listener, whenever the server emits 'updaterooms', this updates the room the client is in
+	socket.on('updaterooms', function(rooms, current_room) {
+		$('#rooms').empty();
+		$.each(rooms, function(key, value) {
+			if(value == current_room){
+				$('#rooms').append('<div style="margin-top:15px; color:white; background-color:lightskyblue">' + value + '</div>');
+				if($('#roomName')[0]){
+					$('#roomName').text( "("+value+")")
+				}else{
+					//$('#peopleHeader').append("<font id='roomName' style='font-size:12px'> ("+value+")</font>")
+				}
+			}else  if (value.indexOf(user) > -1 || value == "General"){
+				$('#rooms').append('<div style="margin-top:15px"><a href="#" onclick="switchRoom(\''+value+'\')">' + value + '</a></div>');
+			}
+		});
+		$('#div1').show();
+		if(socket.username != user){
+
+		}
+	});
+
+	socket.on("base64 file", function(data) {
+		var datatype = data.tyle;
+		$('#conversation').append('<div><b>'+data.username + ':</b> ' + "<a target='_blank' download='" + data.fileName +"' href='"+data.file+"'>"+data.fileName+"</a>"  + '<font style="float: right;">'+new Date().toLocaleString()+'</font>'+ '<br></div>');
+	})
+		
+	socket.on('updatePeople', function(data) {
+		$('#people').empty();	
+		for(var i = 0; i < data.length; i++){
+			var ele = document.createElement('li')
+			ele.textContent = data[i]
+			if(user == data[i]){
+				ele.style="cursor:pointer; color:green";
+			}else{
+				ele.style="cursor:pointer";
+			}
+			
+			$(ele).attr("class","user");
+			$('#people').append(ele);
+		}
+		$('.user').click(function(e){	
+			if(this.textContent != user){	
+			
+				if(e.ctrlKey == true){
+					socket.emit('addToGroup', this.textContent, $('#rooms div:not(:has(a))').text());
+				}else {					
+					socket.emit('createGroup', this.textContent);
+				}
+			}
+		})
+	});
+	
+	socket.on('invitePeople', function(fromUser, toUser, newRoom) {
+	var invitor = fromUser;
+		var currentUserlist = $('#people li');
+		var alert
+		if (user == toUser)
+			alert = confirm(invitor +" want to check with you");
+		if(alert){
+			switchRoom(newRoom)
+		}
+	});
+function setCookie(cname, cvalue, exdays) {
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+    var expires = "expires="+d.toUTCString();
+    document.cookie = cname + "=" + cvalue + "; " + expires;
+}
+	
+function getCookie(cname) {
+    var name = cname + "=";
+    var ca = document.cookie.split(';');
+    for(var i = 0; i < ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+}
+	function switchRoom(room){
+	var conversationHistory = $('#conversation div');
+	var tempHistory = "";
+		for (var i = 0 ; i < conversationHistory.length; i++){
+			tempHistory += conversationHistory[i].textContent + ",,,,"
+		}
+		setCookie($('#rooms div:not(:has(a))').text(), tempHistory);
+		var roomConversation = getCookie(room);
+		$('#conversation').empty();
+		if(roomConversation != ""){
+			var history = roomConversation.split(",,,,")
+			for(var i = 0 ; i < history.length; i++){
+				var historyEle = document.createElement('div');
+				historyEle.textContent = history[i]
+				$('#conversation').append(historyEle);
+			}
+		}
+		socket.emit('switchRoom', room);
+	}
+	
+	// on load of page
+	$(function(){
+		// when the client clicks SEND
+		$('#datasend').click( function() {
+			var message = $('#data').val();
+			$('#data').val('');
+			// tell server to execute 'sendchat' and send along one parameter
+			socket.emit('sendchat', message);
+		});
+
+		// when the client hits ENTER on their keyboard
+		$('#data').keypress(function(e) {
+			if(e.which == 13) {
+				$(this).blur();
+				$('#datasend').focus().click();
+			}
+		});
+		var collapsePeople = false;
+		$('#togglePeople').click(function(e){
+			if(!collapsePeople){
+				collapsePeople = true;
+				$('#chatPeople').hide()
+			}else{
+				collapsePeople = false;
+				$('#chatPeople').show()
+			}
+		});
+		
+		$('#info').mouseenter(
+			function(e){
+				$('#tip').show();
+			}
+		)
+		$('#info').mouseleave(
+			function(e){
+				$('#tip').hide();
+			}
+		)
+	});
+	var FReader;
+	var Name;
+
+
+	function StartUpload(){
+		if(document.getElementById('FileBox').value != "")
+		{
+			FReader = new FileReader();
+			Name = document.getElementById('NameBox').value;
+			
+			FReader.onload = function(evnt){
+				socket.emit('base64 file', { 'Name' : Name, Data : evnt.target.result, tyle: SelectedFile.type });
+			}
+			FReader.readAsDataURL(SelectedFile);
+		}
+		else
+		{
+			alert("Please Select A File");
+		}
+	}
+	function FileChosen(evnt) {
+		SelectedFile = evnt.target.files[0];
+		document.getElementById('NameBox').value = SelectedFile.name;
+		$('#UploadButton').click()
+	}
+	$(document).ready(function(e){
+		if(window.File && window.FileReader){ //These are the relevant HTML5 objects that we are going to use 
+			document.getElementById('UploadButton').addEventListener('click', StartUpload);  
+			document.getElementById('FileBox').addEventListener('change', FileChosen);
+		}
+		else
+		{
+			document.getElementById('UploadArea').innerHTML = "Your Browser Doesn't Support The File API Please Update Your Browser";
+		}
+	
+			
+	})
+	socket.on('MoreData', function (data){
+ 
+    var Place = data['Place'] * 524288; //The Next Blocks Starting Position
+    var NewFile; //The Variable that will hold the new Block of Data
+    if(SelectedFile.webkitSlice) 
+        NewFile = SelectedFile.webkitSlice(Place, Place + Math.min(524288, (SelectedFile.size-Place)));
+    else
+        NewFile = SelectedFile.mozSlice(Place, Place + Math.min(524288, (SelectedFile.size-Place)));
+    FReader.readAsBinaryString(NewFile);
+	
+	
+	
+});
+ 
+ setTimeout(function(){$('#div1').css("opacity", "0.9")}, 3500);
+ setTimeout(function(){$('#div1').css("opacity", "0.8")}, 3600);
+ setTimeout(function(){$('#div1').css("opacity", "0.7")}, 3700);
+ setTimeout(function(){$('#div1').css("opacity", "0.6")}, 3800);
+ setTimeout(function(){$('#div1').css("opacity", "0.5")}, 3900);
+ setTimeout(function(){$('#div1').css("opacity", "0.4")}, 4000);
+ setTimeout(function(){$('#div1').css("opacity", "0.3")}, 4100);
+ setTimeout(function(){$('#div1').css("opacity", "0.2")}, 4200);
+ setTimeout(function(){$('#div1').css("opacity", "0.1")}, 4300);
+ setTimeout(function(){$('#div1').css("opacity", "0")}, 4400);
+
+		
+</script>
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+
+<!-- Latest compiled and minified JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+<div style="float:left;width:15%;border-right:1px solid black;height:93%;padding:10px;overflow:scroll-y;">
+	<p class="bg-primary" style="padding: 10px;    margin: -10px; font-weight:bold">GROUPS</p>
+	<div id="rooms"></div>
+</div>
+<div style="float:left;width:85%;margin-top: 5px;height:83%;margin-bottom:5%;overflow:auto;padding:10px;position:relative;">
+	<div id="div1">
+		<div id="animated-example" class="animated shake">	
+			<div id="welMsg">Welcome!</div>
+			<img id="aeoplane" src="https://s-media-cache-ak0.pinimg.com/736x/99/0f/a5/990fa50571428eedb1cc92511ceda2fb.jpg"></img>
+		</div>
+	</div>
+
+	<div style="margin-bottom:5px; position: absolute;    top: 0;" id="conversation"></div>
+	
+</div>
+<div id="msg">
+		<input id="data" style="width:100%; margin-bottom:5px" />
+		<input class="btn" style="font-weight: bold; width:100px; float:left;" type="button" id="datasend" value="Send" />
+		<div style="display:inline-block; width:8%;" id="UploadBox">
+			<span id='UploadArea' style="margin-left:5px">
+				<label for="FileBox"> <span class="btn" style="font-weight: bold; float:left;width:100px">File</span></label>
+				<input style="visibility: hidden; position: absolute;" id="FileBox" class="form-control" type="file" name="files">
+				<label for="NameBox"></label><input style="width:40%;display:none" type="text" id="NameBox" disabled>	 
+				<button  style="display:none" type='button' id='UploadButton' class='Button'>Upload</button>
+			</span>
+		</div>
+		<button type="button" class="btn-default btn-lg btn" id="togglePeople"  style=" padding: 0;   border: none;font-size:18px; color:white;background: #3f88b8; width:100px; height:34px; float:left; margin-left:5px">
+		 <font style="font-size:14px;">People</font> <span id="info" class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+		 <div id="tip" style="border-radius: 10%;  font-size:12px; position:absolute; color:white;  padding: 10px; margin-top:0px; z-index:2;background-color: skyblue; top:0px; display:none">Click user to invite pair chat. Ctrl + Click for group chat!</div>
+		</button>
+		
+	</div>
+	<div id="chatPeople" style="width:30%; float:right;background-color:lightblue; color:white;position: absolute;    top: 0;    right: 0;">
+		<p class="bg-primary"  id="peopleHeader"  style="padding: 10px;  font-weight:bold">PEOPLE</p>
+		<ul id="people" style="list-style-type: none;">
+		</ul>
+	</div>
+<script>
+$(document).ready(function(e){
+	$('.btn').mouseenter(function(){
+			$(this).css("background-color", "#3cb0fd")
+				$(this).css("color", "white")
+	})
+	$('.btn').mouseleave(function(){	
+		$(this).css("background-color", "#3f88b8")
+				$(this).css("color", "white")
+	})
+
+			
+})
+
+</script>
