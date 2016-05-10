@@ -9,11 +9,12 @@ Please refer to it to learn how to run this application.
 # update
 
 This example was further updated to add functions below:
-1. Multi chatrooms
+1. Multi dynamic chatrooms
 2. Send File
-3. User name Checking
+3. User name Checking before login
 4. Welcome animation
 5. View all online users
 6. Cookies History
+7. Message alert
 
 

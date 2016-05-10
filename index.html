@@ -88,7 +88,7 @@ body{
 
 
 var FReader;
-	var socket = io.connect('http://192.168.1.29:3000');
+	var socket = io.connect();
 	var user;
 	var currentUsers;
 var temp;
@@ -113,9 +113,27 @@ var temp;
 		
 		socket.emit('adduser', user);
 	});
-	
+	newExcitingAlerts = (function () {
+		var oldTitle = document.title;
+		var msg = "New Message!";
+		var timeoutId;
+		var blink = function() { document.title = document.title == msg ? ' ' : msg; };
+		var clear = function() {
+			clearInterval(timeoutId);
+			document.title = oldTitle;
+			window.onmousemove = null;
+			timeoutId = null;
+		};
+		return function () {
+			if (!timeoutId) {
+				timeoutId = setInterval(blink, 1000);
+				window.onmousemove = clear;
+			}
+		};
+	}());
 	// listener, whenever the server emits 'updatechat', this updates the chat body
 	socket.on('updatechat', function (username, data) {
+		newExcitingAlerts();
 		$('#conversation').append('<div><b>'+username + ':</b> ' + data + '<font style="padding-left: 28em;float: right;">'+new Date().toLocaleString()+'</font>'+ '<br></div>' );
 	});
 	// listener, whenever the server emits 'updaterooms', this updates the room the client is in
